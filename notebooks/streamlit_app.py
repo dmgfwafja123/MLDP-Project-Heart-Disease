@@ -129,17 +129,17 @@ with col4:
     chestpain = st.selectbox(
         "Chest Pain Type",
         options=[
-            "Typical Angina",
-            "Atypical Angina", 
-            "Non-anginal Pain",
+            "Typical Angia",
+            "Atypical Angia", 
+            "Non-angial Pain",
             "Asymptomatic"
         ],
         help="Type of chest pain experienced"
     )
     chestpain_map = {
-        "Typical Angina": 0,
-        "Atypical Angina": 1,
-        "Non-anginal Pain": 2,
+        "Typical Angia": 0,
+        "Atypical Angia": 1,
+        "Non-angial Pain": 2,
         "Asymptomatic": 3
     }
     chestpain_encoded = chestpain_map[chestpain]
@@ -209,11 +209,15 @@ st.divider()
 # PREDICTION SECTION
 # ==========================================
 
+# ==========================================
+# PREDICTION SECTION - FIXED
+# ==========================================
+
 st.header("🔮 Get Prediction")
 
 if st.button("Predict Heart Disease Risk", type="primary", use_container_width=True):
     
-    # Create input DataFrame (raw data)
+    # Corrected column names matching training
     input_data_raw = pd.DataFrame({
         'age': [age],
         'gender': [gender_encoded],
@@ -223,26 +227,25 @@ if st.button("Predict Heart Disease Risk", type="primary", use_container_width=T
         'chestpain': [chestpain_encoded],
         'restingrelectro': [restingrelectro_encoded],
         'maxheartrate': [maxheartrate],
-        'exerciseangia': [exerciseangia_encoded],
+        'exerciseangia': [exerciseangia_encoded],  # Correct name
         'oldpeak': [oldpeak],
         'slope': [slope_encoded],
         'noofmajorvessels': [noofmajorvessels]
     })
     
-    # Apply One-Hot Encoding (SAME as training!)
-    input_data_encoded = pd.get_dummies(
-        input_data_raw,
-        columns=categorical_columns,
-        drop_first=True
-    )
+    # One-hot encode categorical features (without dropping first, safer for single-row input)
+    input_data_encoded = pd.get_dummies(input_data_raw, columns=categorical_columns, drop_first=False)
     
-    # Ensure all columns from training are present
+    # Ensure all expected columns from training exist
     for col in feature_columns:
         if col not in input_data_encoded.columns:
             input_data_encoded[col] = 0
     
-    # Reorder columns to match training data
+    # Reorder columns exactly as in training
     input_data_encoded = input_data_encoded[feature_columns]
+    
+    # Debugging: see if columns match
+    # st.write("Encoded columns:", input_data_encoded.columns.tolist())
     
     # Make prediction
     prediction = model.predict(input_data_encoded)[0]
@@ -252,62 +255,19 @@ if st.button("Predict Heart Disease Risk", type="primary", use_container_width=T
     st.divider()
     st.header("📊 Results")
     
-    # Create columns for results
     result_col1, result_col2 = st.columns(2)
     
     with result_col1:
         if prediction == 1:
             st.error("⚠️ **HIGH RISK** - Heart Disease Detected")
-            st.markdown(f"""
-            The model predicts a **{probability[1]*100:.1f}% probability** of heart disease.
-            
-            **Recommendation:** Consult a cardiologist immediately for further evaluation.
-            """)
+            st.markdown(f"The model predicts a **{probability[1]*100:.1f}% probability** of heart disease.")
         else:
             st.success("✅ **LOW RISK** - No Heart Disease Detected")
-            st.markdown(f"""
-            The model predicts a **{probability[0]*100:.1f}% probability** of no heart disease.
-            
-            **Recommendation:** Maintain a healthy lifestyle and regular check-ups.
-            """)
+            st.markdown(f"The model predicts a **{probability[0]*100:.1f}% probability** of no heart disease.")
     
     with result_col2:
-        st.metric(
-            label="Disease Probability",
-            value=f"{probability[1]*100:.1f}%",
-            delta=f"{probability[1]*100 - 50:.1f}% from average"
-        )
-        
-        st.metric(
-            label="No Disease Probability",
-            value=f"{probability[0]*100:.1f}%"
-        )
-    
-    # Show warning
-    st.warning("""
-    **Important Notice:**
-    - This prediction is based on a machine learning model and should not be used as a sole diagnostic tool.
-    - Always consult with qualified healthcare professionals for medical advice.
-    - This tool is for educational and screening purposes only.
-    """)
-    
-    # Optional: Show input summary
-    with st.expander("📋 View Input Summary"):
-        st.write("Patient Information Submitted:")
-        st.json({
-            "Age": age,
-            "Gender": gender,
-            "Resting BP": restingBP,
-            "Cholesterol": serumcholestrol,
-            "Max Heart Rate": maxheartrate,
-            "Chest Pain": chestpain,
-            "Exercise Angia": exerciseangia,
-            "Fasting Blood Sugar > 120": fastingbloodsugar,
-            "Resting ECG": restingrelectro,
-            "Oldpeak": oldpeak,
-            "Slope": slope,
-            "Major Vessels": noofmajorvessels
-        })
+        st.metric(label="Disease Probability", value=f"{probability[1]*100:.1f}%")
+        st.metric(label="No Disease Probability", value=f"{probability[0]*100:.1f}%")
 
 # ==========================================
 # FOOTER
